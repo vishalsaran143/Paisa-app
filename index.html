@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Paisa">
+<meta name="theme-color" content="#080808">
+<title>Paisa</title>
+<link rel="manifest" id="pwaManifest">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #080808;
+  --s1: #111;
+  --s2: #191919;
+  --s3: #222;
+  --border: #2c2c2c;
+  --text: #efefef;
+  --muted: #555;
+  --muted2: #777;
+  --green: #aaee44;
+  --red: #ff4040;
+  --orange: #ffaa00;
+  --blue: #4499ff;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;display:flex;flex-direction:column;}
+
+/* Scrollable content area */
+.page-wrap{flex:1;overflow-y:auto;padding-bottom:80px;}
+
+/* Header */
+.hdr{padding:18px 18px 10px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--bg);z-index:20;}
+.hdr-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--green);letter-spacing:-1px;}
+.hdr-sub{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;}
+.hdr-right{display:flex;gap:8px;align-items:center;}
+.icon-btn{background:var(--s2);border:1px solid var(--border);color:var(--muted2);font-size:14px;padding:6px 10px;border-radius:10px;cursor:pointer;}
+
+/* Views */
+.view{display:none;padding:0 16px;}
+.view.active{display:block;}
+
+/* Cards */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;}
+.card-sm{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:12px;}
+
+/* Balance setup */
+.balance-setup{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.balance-setup label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;white-space:nowrap;}
+.bal-input{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--green);font-family:'Syne',sans-serif;font-size:16px;font-weight:700;outline:none;width:100%;}
+.bal-input:focus{border-color:var(--green);}
+.bal-set-btn{background:var(--green);border:none;border-radius:10px;padding:8px 14px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#000;cursor:pointer;white-space:nowrap;}
+
+/* Big balance display */
+.big-bal{margin-bottom:6px;}
+.big-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;}
+.big-num{font-family:'Syne',sans-serif;font-size:44px;font-weight:800;letter-spacing:-2px;line-height:1;}
+.big-num.green{color:var(--green);}
+.big-num.orange{color:var(--orange);}
+.big-num.red{color:var(--red);}
+
+/* Progress */
+.prog-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:10px 0 6px;}
+.prog-fill{height:100%;border-radius:2px;background:var(--green);transition:width .4s ease,background .3s;}
+.prog-fill.warn{background:var(--orange);}
+.prog-fill.danger{background:var(--red);}
+.prog-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);}
+
+/* Stats grid */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.stat-card{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:12px 14px;}
+.stat-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;}
+.stat-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;}
+
+/* Day status badge */
+.day-status{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:500;margin-bottom:12px;}
+.day-status.ok{background:rgba(170,238,68,.12);border:1px solid rgba(170,238,68,.3);color:var(--green);}
+.day-status.over{background:rgba(255,64,64,.12);border:1px solid rgba(255,64,64,.3);color:var(--red);}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
+
+/* Week summary */
+.week-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.week-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
+.week-total{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--green);}
+
+/* Category rows */
+.sec-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin:14px 0 8px;}
+.cat-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s1);border:1px solid var(--border);border-radius:12px;margin-bottom:7px;}
+.cat-icon{font-size:16px;width:28px;text-align:center;}
+.cat-info{flex:1;min-width:0;}
+.cat-name{font-size:11px;margin-bottom:5px;}
+.cat-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+.cat-bar-fill{height:100%;background:var(--green);border-radius:2px;transition:width .4s;}
+.cat-bar-fill.over{background:var(--red);}
+.cat-amt{text-align:right;min-width:70px;}
+.cat-spent{font-size:12px;font-weight:500;}
+.cat-limit{font-size:9px;color:var(--muted);margin-top:2px;}
+
+/* ADD FORM */
+.form-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;}
+.amt-wrap{position:relative;margin-bottom:14px;}
+.amt-symbol{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--muted);}
+.amt-input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:14px 16px 14px 36px;color:var(--text);font-family:'Syne',sans-serif;font-size:28px;font-weight:800;outline:none;letter-spacing:-1px;}
+.amt-input:focus{border-color:var(--green);}
+.amt-input::placeholder{color:var(--border);}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
+.chip{background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:7px 13px;font-size:11px;color:var(--muted2);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;font-family:'DM Mono',monospace;}
+.chip.sel{background:var(--green);border-color:var(--green);color:#000;font-weight:500;}
+.note-wrap{display:flex;gap:8px;margin-bottom:14px;}
+.note-input{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:11px 14px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none;}
+.note-input:focus{border-color:var(--green);}
+.note-input::placeholder{color:var(--muted);}
+.repeat-toggle{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:9px 14px;font-size:18px;cursor:pointer;transition:all .15s;}
+.repeat-toggle.on{background:rgba(68,153,255,.15);border-color:var(--blue);color:var(--blue);}
+.add-btn{width:100%;background:var(--green);border:none;border-radius:14px;padding:15px;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#000;cursor:pointer;letter-spacing:.3px;}
+.add-btn:active{opacity:.85;}
+
+/* HISTORY */
+.day-group{margin-bottom:16px;}
+.day-group-hdr{display:flex;justify-content:space-between;align-items:center;padding:0 4px;margin-bottom:8px;}
+.day-group-date{font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;}
+.day-group-total{font-size:11px;color:var(--text);}
+.week-sep{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.week-sep-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+.week-sep-amt{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--orange);}
+.tx-item{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:11px 12px;display:flex;align-items:center;gap:9px;margin-bottom:6px;}
+.tx-icon{font-size:15px;width:26px;text-align:center;flex-shrink:0;}
+.tx-info{flex:1;min-width:0;}
+.tx-top{display:flex;align-items:center;gap:6px;}
+.tx-cat{font-size:11px;}
+.plus-badge{background:rgba(68,153,255,.2);border:1px solid rgba(68,153,255,.4);color:var(--blue);font-size:8px;padding:1px 5px;border-radius:6px;font-weight:500;}
+.tx-note{font-size:10px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tx-right{text-align:right;flex-shrink:0;}
+.tx-amt{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--red);}
+.tx-time{font-size:9px;color:var(--muted);margin-top:2px;}
+.tx-del{background:none;border:none;color:var(--border);font-size:13px;cursor:pointer;padding:4px;flex-shrink:0;}
+.tx-del:active{color:var(--red);}
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:12px;line-height:2;}
+
+/* ANALYTICS */
+.filter-row{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px;}
+.filter-row::-webkit-scrollbar{display:none;}
+.f-chip{background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-size:11px;color:var(--muted2);cursor:pointer;white-space:nowrap;font-family:'DM Mono',monospace;flex-shrink:0;}
+.f-chip.sel{background:var(--green);border-color:var(--green);color:#000;font-weight:500;}
+.date-range{display:none;gap:8px;margin-bottom:14px;align-items:center;}
+.date-range.show{display:flex;}
+.date-inp{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;}
+.date-inp:focus{border-color:var(--green);}
+.date-sep{font-size:11px;color:var(--muted);}
+.chart-card{background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;}
+.chart-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+.chart-subtitle{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;font-weight:400;}
+.chart-wrap{position:relative;height:200px;}
+
+/* Toast */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--green);color:#000;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:600;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;z-index:99;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* Bottom nav */
+.bnav{position:fixed;bottom:0;left:0;right:0;background:var(--s1);border-top:1px solid var(--border);display:flex;padding:6px 0 18px;}
+.ntab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px;background:none;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;}
+.ntab.active{color:var(--green);}
+.ntab-ico{font-size:17px;}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:50;align-items:flex-end;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:20px;width:100%;}
+.modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:14px;}
+.modal-row{display:flex;gap:10px;margin-bottom:12px;}
+.modal-close{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:12px;font-family:'Syne',sans-serif;font-size:14px;color:var(--muted);cursor:pointer;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div>
+    <div class="hdr-title">paisa</div>
+    <div class="hdr-sub" id="hdrSub"></div>
+  </div>
+  <div class="hdr-right">
+    <div style="display:flex;gap:8px;">
+      <button class="icon-btn" id="syncBtn" onclick="syncNow()" title="Sync to Sheets">☁</button>
+      <button class="icon-btn" onclick="openBalModal()">⚙ Bal</button>
+      <button class="icon-btn" onclick="openSettings()">⚙</button>
+    </div>
+  </div>
+</div>
+
+<div class="page-wrap">
+
+<!-- ══════════ OVERVIEW ══════════ -->
+<div class="view active" id="overviewView">
+
+  <!-- Day Status -->
+  <!-- Main balance card -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div style="flex:1">
+        <div class="big-label">bacha hua (is mahine)</div>
+        <div class="big-num green" id="mainBalance">₹0</div>
+      </div>
+      <button onclick="openBalModal()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted2);border-radius:10px;padding:7px 11px;font-size:14px;cursor:pointer;flex-shrink:0;margin-top:4px;" title="Balance edit karo">✎</button>
+    </div>
+    <div id="balEditInline" style="display:none;margin:10px 0 6px;gap:8px;align-items:center;">
+      <input type="number" id="inlineBalInput" placeholder="nayi balance daalo" inputmode="decimal"
+        style="flex:1;background:var(--s2);border:1px solid var(--green);border-radius:10px;padding:8px 12px;color:var(--green);font-family:'Syne',sans-serif;font-size:16px;font-weight:700;outline:none;width:100%">
+      <button onclick="saveInlineBal()" style="background:var(--green);border:none;border-radius:10px;padding:8px 14px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#000;cursor:pointer;flex-shrink:0;">Save</button>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" id="mainProg" style="width:0%"></div></div>
+    <div class="prog-labels" style="align-items:center;">
+      <span id="progSpent">₹0 kharch</span>
+      <span style="display:flex;align-items:center;gap:6px;">
+        <span id="progSalary">₹0 salary</span>
+        <button onclick="toggleSalaryEdit()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted2);border-radius:8px;padding:3px 8px;font-size:11px;cursor:pointer;">✎</button>
+      </span>
+    </div>
+    <div id="salaryEditInline" style="display:none;margin-top:10px;display:none;gap:8px;align-items:center;">
+      <input type="number" id="inlineSalaryInput" placeholder="salary daalo" inputmode="decimal"
+        style="flex:1;background:var(--s2);border:1px solid var(--green);border-radius:10px;padding:8px 12px;color:var(--green);font-family:'Syne',sans-serif;font-size:16px;font-weight:700;outline:none;width:100%">
+      <button onclick="saveInlineSalary()" style="background:var(--green);border:none;border-radius:10px;padding:8px 14px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#000;cursor:pointer;flex-shrink:0;">Save</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-lbl">aaj ka kharch</div>
+      <div class="stat-val" id="todayVal">₹0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-lbl">is hafte</div>
+      <div class="stat-val" id="weekVal">₹0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-lbl">din bache</div>
+      <div class="stat-val" id="daysLeftVal">0</div>
+    </div>
+  </div>
+
+  <!-- Week summary -->
+  <div class="card">
+    <div class="week-hdr">
+      <div class="week-title">Is Hafte Ka Haal</div>
+      <div class="week-total" id="weekTotalBig">₹0</div>
+    </div>
+    <div id="weekDayBars"></div>
+  </div>
+
+  <!-- Categories -->
+  <div class="sec-title">category wise</div>
+  <div id="catList"></div>
+
+</div>
+
+<!-- ══════════ ADD ══════════ -->
+<div class="view" id="addView">
+  <div style="padding-top:8px">
+    <div class="form-label">kitna?</div>
+    <div class="amt-wrap">
+      <span class="amt-symbol">₹</span>
+      <input type="number" class="amt-input" id="amtInput" placeholder="0" inputmode="decimal">
+    </div>
+
+    <div class="form-label">category</div>
+    <div class="chips" id="catChips"></div>
+
+    <div class="form-label">note + repeat?</div>
+    <div class="note-wrap">
+      <input type="text" class="note-input" id="noteInput" placeholder="kya kharida... (optional)">
+      <button class="repeat-toggle" id="repeatToggle" onclick="toggleRepeat()" title="Repeat / Additional purchase">＋</button>
+    </div>
+
+    <button class="add-btn" onclick="addExpense()">kharch add karo →</button>
+  </div>
+</div>
+
+<!-- ══════════ HISTORY ══════════ -->
+<div class="view" id="historyView">
+  <div style="padding-top:8px">
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<!-- ══════════ ANALYTICS ══════════ -->
+<div class="view" id="analyticsView">
+  <div style="padding-top:8px">
+
+    <div class="filter-row" id="filterRow">
+      <div class="f-chip sel" data-f="day" onclick="setFilter('day',this)">Aaj</div>
+      <div class="f-chip" data-f="week" onclick="setFilter('week',this)">Is Hafte</div>
+      <div class="f-chip" data-f="month" onclick="setFilter('month',this)">Is Mahine</div>
+      <div class="f-chip" data-f="range" onclick="setFilter('range',this)">Date Range</div>
+    </div>
+
+    <div class="date-range" id="dateRangeRow">
+      <input type="date" class="date-inp" id="rangeFrom">
+      <span class="date-sep">→</span>
+      <input type="date" class="date-inp" id="rangeTo">
+      <button class="bal-set-btn" onclick="applyRange()">Go</button>
+    </div>
+
+    <!-- Bar chart: category wise -->
+    <div class="chart-card">
+      <div class="chart-title">
+        Category Kharch
+        <span class="chart-subtitle">bar graph</span>
+      </div>
+      <div class="chart-wrap"><canvas id="catChart"></canvas></div>
+    </div>
+
+    <!-- Line chart: daily overall -->
+    <div class="chart-card">
+      <div class="chart-title">
+        Roz Ka Kharch
+        <span class="chart-subtitle">line graph</span>
+      </div>
+      <div class="chart-wrap"><canvas id="lineChart"></canvas></div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- end page-wrap -->
+
+<!-- BOTTOM NAV -->
+<div class="bnav">
+  <button class="ntab active" onclick="switchTab('overview',this)">
+    <span class="ntab-ico">◉</span><span>Overview</span>
+  </button>
+  <button class="ntab" onclick="switchTab('add',this)">
+    <span class="ntab-ico">＋</span><span>Add</span>
+  </button>
+  <button class="ntab" onclick="switchTab('history',this)">
+    <span class="ntab-ico">≡</span><span>History</span>
+  </button>
+  <button class="ntab" onclick="switchTab('analytics',this)">
+    <span class="ntab-ico">▦</span><span>Analytics</span>
+  </button>
+</div>
+
+<!-- BALANCE MODAL -->
+<div class="modal-overlay" id="balModal" onclick="closeBalModal(event)">
+  <div class="modal">
+    <div class="modal-title">Balance Set Karo</div>
+    <div class="modal-row">
+      <input type="number" class="bal-input" id="balInput" placeholder="e.g. 700" inputmode="decimal" style="flex:1">
+      <button class="bal-set-btn" onclick="setBalance()">Save</button>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:14px">Abhi mere paas kitna paisa hai? Daily limit automatically calculate hogi.</div>
+    <button class="modal-close" onclick="closeBalModal()">Cancel</button>
+  </div>
+</div>
+
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal" onclick="closeSettings(event)">
+  <div class="modal">
+    <div class="modal-title">⚙ Settings</div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Google Sheets URL</div>
+    <input type="url" id="sheetsUrl" placeholder="Apps Script Web App URL paste karo"
+      style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:DM Mono,monospace;font-size:11px;outline:none;margin-bottom:10px;">
+    <button onclick="saveSettings()" style="width:100%;background:var(--green);border:none;border-radius:12px;padding:12px;font-family:Syne,sans-serif;font-size:14px;font-weight:700;color:#000;cursor:pointer;margin-bottom
